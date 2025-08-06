@@ -30,6 +30,16 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[blessed,dev]"
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@beta
@@ -39,26 +49,28 @@ jobs:
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
-          
+
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
           # model: "claude-opus-4-20250514"
-          
+
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"
-          
+
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
-          
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
-          
+
+          # Python-specific commands for testing and development
+          allowed_tools: "Bash(pytest*),Bash(black*),Bash(ruff*),Bash(mypy*),Bash(pip install*),Bash(python -m*)"
+
+          # Custom instructions for Python project
+          custom_instructions: |
+            This is a Python package for controlling monitor settings via DDC/CI.
+            Follow Python PEP 8 standards and this project's black/ruff configuration.
+            Ensure all new code includes type hints (mypy compliant).
+            Write pytest tests for new functionality.
+            Use Python 3.8+ compatible syntax only.
+            The package supports both blessed (inline UI) and curses (full-screen) interfaces.
+
           # Optional: Custom environment variables for Claude
           # claude_env: |
           #   NODE_ENV: test
-
