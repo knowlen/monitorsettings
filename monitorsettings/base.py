@@ -19,7 +19,7 @@ class DDCInterface:
         self.displays: List[int] = []
         self._lock = threading.Lock()
         self._last_command_time = 0
-        self._command_interval = 1.0 # inimum time between DDC commands
+        self._command_interval = 1.0  # inimum time between DDC commands
 
     def check_ddcutil(self) -> bool:
         """Check if ddcutil is available on the system"""
