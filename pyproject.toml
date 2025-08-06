@@ -3,14 +3,14 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "brightness-control"
-version = "1.0.0"
-description = "Interactive terminal-based monitor brightness controller using DDC/CI"
+name = "monitorsettings"
+version = "2.0.0"
+description = "Terminal-based monitor control utility using DDC/CI protocol"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "nick knowles"}
+    {name = "Nick Knowles"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -28,26 +28,30 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
-keywords = ["brightness", "monitor", "DDC/CI", "ddcutil", "display", "backlight"]
+keywords = ["brightness", "monitor", "DDC/CI", "ddcutil", "display", "backlight", "settings"]
 
 # Python has curses built-in on Linux, no external dependencies needed
 dependencies = []
 
 [project.optional-dependencies]
+blessed = [
+    "blessed>=1.19.0",
+]
 dev = [
     "black",
     "ruff",
     "mypy",
-]
-blessed = [
-    "blessed>=1.19.0",
+    "pytest>=7.0.0",
+    "pytest-cov",
 ]
 
 [project.scripts]
-brightness-control = "brightness_control:main"
+monitorsettings = "monitorsettings.cli:main"
 
-[tool.setuptools]
-py-modules = ["brightness_control"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["monitorsettings*"]
+exclude = ["tests*"]
 
 [tool.black]
 line-length = 100

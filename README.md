@@ -1,6 +1,6 @@
-# Brightness Control
+# Monitor Settings
 
-An interactive terminal-based monitor brightness controller for Linux systems using DDC/CI protocol.
+Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 
 ## Features
 
@@ -8,8 +8,9 @@ An interactive terminal-based monitor brightness controller for Linux systems us
 - Control all monitors simultaneously or individually
 - Keyboard navigation with arrow keys
 - Debounced DDC commands for responsive performance
-- No flicker interface with smooth updates
+- Two UI modes: inline (blessed) and full-screen (curses)
 - Support for multiple monitors
+- Extensible architecture for future monitor settings
 
 ## System Requirements
 
@@ -56,72 +57,40 @@ sudo usermod -aG i2c $USER
 
 ### Python Package Installation
 
-#### Using uv (recommended - faster):
 ```bash
-# Install uv if you don't have it
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Clone this repository
+git clone https://github.com/knowlen/monitorsettings.git
+cd monitorsettings
 
-# Clone or download this repository
-cd screen_control
+# Install package (with optional blessed dependency)
+pip install -e ".[blessed]"
 
-# Install with uv
-uv pip install -e .
-
-# Or create a venv and install
-uv venv
-source .venv/bin/activate  # On Linux/Mac
-uv pip install -e .
-```
-
-#### Using pip (traditional):
-```bash
-# Clone or download this repository
-cd screen_control
-
-# Install in development mode
+# Or without blessed (curses-only mode)
 pip install -e .
-
-# Or install normally
-pip install .
 ```
 
 ## Usage
 
-Run the brightness controller:
 ```bash
-brightness-control
-```
+# Run the monitor settings controller
+monitorsettings
 
-Or run directly without installation:
-```bash
-python brightness_control.py
+# Or use Python module syntax
+python -m monitorsettings
 ```
 
 ### Controls
 
-- **↑/→** - Increase brightness
-- **↓/←** - Decrease brightness
-- **+/-** - Adjust step size (how much brightness changes per keypress)
-- **0** - Control all displays simultaneously
-- **1-9** - Control specific display by number
-- **q/Esc** - Quit the application
-
-### Visual Indicators
-
-- **>** - Arrow indicates which displays are being controlled
-- **Progress Bar** - Shows current brightness level
-- **Percentage** - Displays exact brightness value
-- **\*** - Asterisk indicates pending brightness change
+- ↑/→ - Increase brightness
+- ↓/← - Decrease brightness
+- +/- - Adjust step size
+- 0 - Control all displays
+- 1-9 - Control specific display
+- q/Esc - Quit
 
 ## Monitor Setup
 
-**IMPORTANT**: DDC/CI must be enabled in your monitor's OSD (On-Screen Display) menu. This setting is usually found under:
-- System Settings
-- General Settings
-- Display Settings
-- Other Settings
-
-Look for options like:
+DDC/CI must be enabled in your monitor's OSD menu. Look for settings named:
 - DDC/CI
 - DDC
 - Display Data Channel
@@ -129,34 +98,47 @@ Look for options like:
 ## Troubleshooting
 
 ### No monitors detected
-1. Ensure DDC/CI is enabled in monitor OSD
-2. Check if i2c-dev module is loaded: `lsmod | grep i2c_dev`
-3. Verify user is in i2c group: `groups | grep i2c`
-4. Try different video cables (some don't support DDC)
-5. Check dmesg for i2c errors: `dmesg | grep i2c`
+- Ensure DDC/CI is enabled in monitor OSD
+- Check i2c-dev module: `lsmod | grep i2c_dev`
+- Verify i2c group membership: `groups | grep i2c`
+- Some video cables don't support DDC
 
-### Slow response times
-This is a limitation of the DDC/CI protocol and ddcutil. The script uses debouncing and parallel commands to minimize delays, but hardware response times vary by monitor model.
+### Slow response
+DDC/CI protocol limitation. Response times vary by monitor model.
 
 ### Permission errors
-Make sure you've:
-1. Added your user to the i2c group
-2. Logged out and back in after group change
-3. Loaded the i2c-dev kernel module
+- Add user to i2c group: `sudo usermod -aG i2c $USER`
+- Log out and back in for group changes
+- Load i2c-dev module: `sudo modprobe i2c-dev`
 
-## Technical Details
+## Architecture
 
-The brightness controller uses:
-- Python's `curses` library for terminal UI
-- `ddcutil` for DDC/CI communication
-- Threading for asynchronous brightness updates
-- Debouncing to prevent command flooding
+- Modular design with pluggable UI backends (blessed/curses)
+- Async DDC command processing with debouncing
+- Extensible for additional monitor settings (color temperature, contrast, etc.)
 - VCP code 0x10 for brightness control
+
+### Communication Stack
+
+```
+monitorsettings (this app)
+      ↓
+ddcutil (user-space tool)
+      ↓
+/dev/i2c-X (created by i2c-dev)
+      ↓
+Graphics card I²C bus
+      ↓
+Monitor DDC/CI interface
+```
+
+## Planned Features
+
+- Color temperature adjustment
+- Contrast and saturation controls
+- Input source switching
+- Profile management
 
 ## License
 
-MIT License
-
-## Contributing
-
-Feel free to open issues or submit pull requests for improvements.
+MIT
