@@ -2,7 +2,7 @@
 
 Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 
-<script src="https://asciinema.org/a/731872.js" id="asciicast-731872" async="true"></script>
+![Demo](assets/demo.gif)
 
 
 
