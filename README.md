@@ -2,6 +2,8 @@
 
 Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 
+![Monitor Settings Screenshot](assets/screenshot.webp)
+
 ## Features
 
 - Real-time brightness control with visual progress bars
