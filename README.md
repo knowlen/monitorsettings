@@ -1,5 +1,9 @@
 # Monitor Settings
 
+[![CI](https://github.com/knowlen/monitorsettings/actions/workflows/ci.yml/badge.svg)](https://github.com/knowlen/monitorsettings/actions/workflows/ci.yml)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
+
 Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 
 ![Demo](assets/demo.gif)
@@ -19,7 +23,7 @@ Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 ## System Requirements
 
 - Linux (tested on Arch Linux)
-- Python 3.7+
+- Python 3.8+
 - `ddcutil` - DDC/CI monitor control utility
 - Monitors with DDC/CI support enabled
 
@@ -61,16 +65,31 @@ sudo usermod -aG i2c $USER
 
 ### Python Package Installation
 
+#### From Source (Development)
+
 ```bash
 # Clone this repository
 git clone https://github.com/knowlen/monitorsettings.git
 cd monitorsettings
 
-# Install package (with optional blessed dependency)
+# Install in development mode with blessed UI (recommended)
 pip install -e ".[blessed]"
 
 # Or without blessed (curses-only mode)
 pip install -e .
+
+# For development with all tools
+pip install -e ".[blessed,dev]"
+```
+
+#### From PyPI (Coming Soon)
+
+```bash
+# Install with blessed UI (recommended)
+pip install monitorsettings[blessed]
+
+# Or basic installation (curses-only)
+pip install monitorsettings
 ```
 
 ## Usage
@@ -138,13 +157,49 @@ Graphics card I²C bus
 Monitor DDC/CI interface
 ```
 
+## Development
+
+### Running Tests
+
+```bash
+# Install development dependencies
+pip install -e ".[blessed,dev]"
+
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=monitorsettings
+
+# Run linters
+black --check monitorsettings tests
+ruff check monitorsettings tests
+mypy monitorsettings
+```
+
+### Pre-commit Hooks
+
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run hooks manually
+pre-commit run --all-files
+```
+
 ## Planned Features
 
 - Color temperature adjustment
 - Contrast and saturation controls
 - Input source switching
 - Profile management
+- Configuration file support
+- Preset profiles
+
+## Contributing
+
+Contributions are welcome! Please ensure all tests pass and code is formatted with black before submitting a PR.
 
 ## License
 
-WTFPL
+WTFPL - Do What The F*ck You Want To Public License
