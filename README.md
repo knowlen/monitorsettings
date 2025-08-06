@@ -141,4 +141,4 @@ Monitor DDC/CI interface
 
 ## License
 
-MIT
+WTFPL
