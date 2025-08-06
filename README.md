@@ -81,12 +81,14 @@ python -m monitorsettings
 
 ### Controls
 
-- ↑/→ - Increase brightness
-- ↓/← - Decrease brightness
-- +/- - Adjust step size
-- 0 - Control all displays
-- 1-9 - Control specific display
-- q/Esc - Quit
+| Key(s) | Action |
+|--------|--------|
+| ↑/→ | Increase brightness |
+| ↓/← | Decrease brightness |
+| +/- | Adjust step size |
+| 0 | Control all displays |
+| 1-9 | Control specific display |
+| q/Esc | Quit |
 
 ## Monitor Setup
 
