@@ -15,10 +15,10 @@ class DDCInterface:
     Provides low-level access to monitor settings via ddcutil.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.displays: List[int] = []
         self._lock = threading.Lock()
-        self._last_command_time = 0
+        self._last_command_time = 0.0
         self._command_interval = 1.0  # inimum time between DDC commands
 
     def check_ddcutil(self) -> bool:
@@ -126,7 +126,7 @@ class DDCInterface:
             stderr=subprocess.DEVNULL,
         )
 
-    def _wait_for_command_interval(self):
+    def _wait_for_command_interval(self) -> None:
         """Ensure minimum time between DDC commands to prevent flooding"""
         current_time = time.time()
         time_since_last = current_time - self._last_command_time
@@ -146,26 +146,26 @@ class AsyncDDCWorker:
         self.ddc = ddc_interface
         self.update_interval = update_interval
         self.running = False
-        self._thread = None
+        self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._pending_updates: Dict[Tuple[int, str], int] = {}
         self._last_sent: Dict[Tuple[int, str], int] = {}
-        self._last_update_time = 0
+        self._last_update_time = 0.0
 
-    def start(self):
+    def start(self) -> None:
         """Start the background worker thread"""
         if not self.running:
             self.running = True
             self._thread = threading.Thread(target=self._worker_loop, daemon=True)
             self._thread.start()
 
-    def stop(self, timeout: float = 0.5):
+    def stop(self, timeout: float = 0.5) -> None:
         """Stop the background worker thread"""
         self.running = False
         if self._thread:
             self._thread.join(timeout=timeout)
 
-    def queue_update(self, display: int, vcp_code: str, value: int):
+    def queue_update(self, display: int, vcp_code: str, value: int) -> None:
         """
         Queue a VCP value update to be sent asynchronously
 
@@ -177,7 +177,7 @@ class AsyncDDCWorker:
         with self._lock:
             self._pending_updates[(display, vcp_code)] = value
 
-    def _worker_loop(self):
+    def _worker_loop(self) -> None:
         """Main worker loop for processing queued updates"""
         while self.running:
             time.sleep(0.05)  # Check every 50ms

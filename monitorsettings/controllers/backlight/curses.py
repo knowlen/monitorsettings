@@ -5,6 +5,7 @@ Curses-based backlight controller with full-screen terminal UI
 import curses
 import os
 import time
+from typing import Any, Dict, Optional
 
 from .base import BacklightController
 
@@ -15,19 +16,19 @@ class CursesBacklightController(BacklightController):
     Takes over the entire terminal screen like vim/nano.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.stdscr = None
-        self.last_sent_brightness = {}
+        self.stdscr: Optional[Any] = None
+        self.last_sent_brightness: Dict[int, int] = {}
 
-    def run(self):
+    def run(self) -> None:
         """Main entry point that sets up curses wrapper"""
         try:
             curses.wrapper(self._run_curses)
         except KeyboardInterrupt:
             pass
 
-    def _run_curses(self, stdscr):
+    def _run_curses(self, stdscr: Any) -> None:
         """Main run loop with curses terminal handling"""
         self.stdscr = stdscr
 
@@ -51,7 +52,7 @@ class CursesBacklightController(BacklightController):
         self.start_worker()
 
         # Track last draw time to limit refresh rate
-        last_draw = 0
+        last_draw = 0.0
         draw_interval = 0.05  # 20 FPS max
 
         # Main loop
@@ -75,6 +76,7 @@ class CursesBacklightController(BacklightController):
 
     def _init_displays(self) -> bool:
         """Initialize display detection and brightness reading"""
+        assert self.stdscr is not None
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Detecting displays...")
         self.stdscr.refresh()
@@ -101,8 +103,9 @@ class CursesBacklightController(BacklightController):
         time.sleep(0.5)
         return True
 
-    def draw_interface(self):
+    def draw_interface(self) -> None:
         """Draw the main interface without flicker"""
+        assert self.stdscr is not None
         height, width = self.stdscr.getmaxyx()
 
         # Build the entire screen in memory first
@@ -181,7 +184,7 @@ class CursesBacklightController(BacklightController):
 
         self.stdscr.refresh()
 
-    def handle_key(self, key):
+    def handle_key(self, key: int) -> None:
         """Handle keyboard input"""
         if key == ord("q") or key == ord("Q") or key == 27:  # 27 is ESC
             self.running = False
@@ -199,6 +202,6 @@ class CursesBacklightController(BacklightController):
             display_num = key - ord("0")
             self.select_display(display_num)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up on exit"""
         self.stop_worker()

@@ -4,6 +4,7 @@ Main CLI entry point for monitor settings control
 
 import subprocess
 import sys
+from typing import Any
 
 
 def check_ddcutil() -> bool:
@@ -15,7 +16,7 @@ def check_ddcutil() -> bool:
         return False
 
 
-def print_setup_instructions():
+def print_setup_instructions() -> None:
     """Print setup instructions for ddcutil"""
     print("Error: ddcutil is not installed")
     print("\nInstallation:")
@@ -30,7 +31,7 @@ def print_setup_instructions():
     print("\nNote: DDC/CI must be enabled in your monitor's OSD menu")
 
 
-def main():
+def main() -> None:
     """Main entry point for the monitor settings CLI"""
 
     # Check for ddcutil first
@@ -39,7 +40,7 @@ def main():
         sys.exit(1)
 
     # Try to use blessed controller first, fall back to curses if unavailable
-    controller = None
+    controller: Any = None
 
     try:
         # Try importing blessed controller

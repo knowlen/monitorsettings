@@ -3,7 +3,7 @@ Blessed-based backlight controller with inline terminal UI
 """
 
 import time
-from typing import Dict
+from typing import Any, Dict
 
 from blessed import Terminal
 
@@ -16,13 +16,13 @@ class BlessedBacklightController(BacklightController):
     Does not take over the entire screen, updates in place.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.term = Terminal()
         self.interface_lines = 0
         self.last_sent_brightness: Dict[int, int] = {}
 
-    def run(self):
+    def run(self) -> None:
         """Main run loop with blessed terminal handling"""
         print("Initializing brightness controller...")
 
@@ -49,7 +49,7 @@ class BlessedBacklightController(BacklightController):
 
         # Enter cbreak mode for single key input
         with self.term.cbreak(), self.term.hidden_cursor():
-            last_draw = 0
+            last_draw = 0.0
 
             while self.running:
                 # Draw interface at controlled rate
@@ -66,7 +66,7 @@ class BlessedBacklightController(BacklightController):
 
         self.cleanup()
 
-    def draw_interface(self):
+    def draw_interface(self) -> None:
         """Draw interface using blessed terminal with maroon/port color palette"""
         # Move cursor up to overwrite previous interface
         if self.interface_lines > 0:
@@ -147,7 +147,7 @@ class BlessedBacklightController(BacklightController):
 
         self.interface_lines = len(lines)
 
-    def handle_key(self, key):
+    def handle_key(self, key: Any) -> None:
         """Handle keyboard input"""
         if key == "q" or key == "Q" or key.name == "KEY_ESCAPE":
             self.running = False
@@ -168,7 +168,7 @@ class BlessedBacklightController(BacklightController):
         elif key.isdigit() and "1" <= key <= "9":
             self.select_display(int(key))
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up on exit"""
         self.stop_worker()
 

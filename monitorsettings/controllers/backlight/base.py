@@ -3,7 +3,7 @@ Base class for backlight/brightness controllers
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from ...base import AsyncDDCWorker, DDCInterface
 
@@ -17,7 +17,7 @@ class BacklightController(ABC):
     # VCP code for brightness control
     BRIGHTNESS_VCP_CODE = "0x10"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.ddc = DDCInterface()
         self.worker = AsyncDDCWorker(self.ddc)
 
@@ -61,7 +61,7 @@ class BacklightController(ABC):
 
         return True
 
-    def get_brightness(self, display: int) -> tuple[Optional[int], Optional[int]]:
+    def get_brightness(self, display: int) -> Tuple[Optional[int], Optional[int]]:
         """
         Get current and max brightness for a display
 
@@ -73,7 +73,7 @@ class BacklightController(ABC):
         """
         return self.ddc.get_vcp_value(display, self.BRIGHTNESS_VCP_CODE)
 
-    def set_brightness(self, display: int, value: int):
+    def set_brightness(self, display: int, value: int) -> None:
         """
         Set brightness for a display (queued for async sending)
 
@@ -83,7 +83,7 @@ class BacklightController(ABC):
         """
         self.worker.queue_update(display, self.BRIGHTNESS_VCP_CODE, value)
 
-    def adjust_brightness(self, delta: int):
+    def adjust_brightness(self, delta: int) -> None:
         """
         Adjust brightness for selected displays
 
@@ -98,7 +98,7 @@ class BacklightController(ABC):
             self.target_brightness[display] = new_val
             self.set_brightness(display, new_val)
 
-    def select_display(self, display_num: Optional[int] = None):
+    def select_display(self, display_num: Optional[int] = None) -> None:
         """
         Select which display(s) to control
 
@@ -110,20 +110,20 @@ class BacklightController(ABC):
         elif display_num in self.displays:
             self.selected_displays = [display_num]
 
-    def start_worker(self):
+    def start_worker(self) -> None:
         """Start the async DDC worker thread"""
         self.worker.start()
 
-    def stop_worker(self):
+    def stop_worker(self) -> None:
         """Stop the async DDC worker thread"""
         self.worker.stop()
 
     @abstractmethod
-    def run(self):
+    def run(self) -> None:
         """Main run loop - must be implemented by subclasses"""
         pass
 
     @abstractmethod
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup on exit - must be implemented by subclasses"""
         pass
