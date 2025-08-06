@@ -2,7 +2,7 @@
 
 Terminal-based monitor control utility for Linux systems using DDC/CI protocol.
 
-![Monitor Settings Screenshot](assets/screenshot.webp)
+[![asciicast](https://asciinema.org/a/731872.svg)](https://asciinema.org/a/731872)
 
 ## Features
 
