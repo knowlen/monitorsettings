@@ -27,5 +27,5 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [blessed>=1.19.0]
-        args: [--python-version=3.7, --ignore-missing-imports]
+        args: [--python-version=3.8, --ignore-missing-imports]
         exclude: ^tests/

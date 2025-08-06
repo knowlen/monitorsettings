@@ -7,7 +7,7 @@ name = "monitorsettings"
 version = "2.0.0"
 description = "Terminal-based monitor control utility using DDC/CI protocol"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {text = "WTFPL"}
 authors = [
     {name = "Nick Knowles"}
@@ -19,11 +19,11 @@ classifiers = [
     "License :: Other/Proprietary License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: System :: Hardware",
     "Topic :: Utilities",
 ]
@@ -61,11 +61,11 @@ exclude = ["tests*"]
 
 [tool.black]
 line-length = 100
-target-version = ['py37']
+target-version = ['py38']
 
 [tool.ruff]
 line-length = 100
-target-version = "py37"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = [
