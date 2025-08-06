@@ -2,19 +2,14 @@
 Main CLI entry point for monitor settings control
 """
 
-import sys
 import subprocess
+import sys
 
 
 def check_ddcutil() -> bool:
     """Check if ddcutil is available on the system"""
     try:
-        subprocess.run(
-            ["which", "ddcutil"],
-            capture_output=True,
-            check=True,
-            timeout=2
-        )
+        subprocess.run(["which", "ddcutil"], capture_output=True, check=True, timeout=2)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
@@ -37,28 +32,30 @@ def print_setup_instructions():
 
 def main():
     """Main entry point for the monitor settings CLI"""
-    
+
     # Check for ddcutil first
     if not check_ddcutil():
         print_setup_instructions()
         sys.exit(1)
-    
+
     # Try to use blessed controller first, fall back to curses if unavailable
     controller = None
-    
+
     try:
         # Try importing blessed controller
         from .controllers.backlight.blessed import BlessedBacklightController
+
         controller = BlessedBacklightController()
     except ImportError:
         # Fall back to curses controller
         try:
             from .controllers.backlight.curses import CursesBacklightController
+
             controller = CursesBacklightController()
         except ImportError as e:
             print(f"Error: Could not import any controller: {e}")
             sys.exit(1)
-    
+
     # Run the controller
     try:
         controller.run()

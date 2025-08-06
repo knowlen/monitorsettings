@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include pytest.ini
+recursive-include monitorsettings *.py
+recursive-include assets *.gif *.jpg *.cast
+recursive-exclude tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .gitignore
+global-exclude *.swp *.bak *~

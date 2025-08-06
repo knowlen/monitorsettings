@@ -33,6 +33,11 @@ keywords = ["brightness", "monitor", "DDC/CI", "ddcutil", "display", "backlight"
 # Python has curses built-in on Linux, no external dependencies needed
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/knowlen/monitorsettings"
+Repository = "https://github.com/knowlen/monitorsettings.git"
+"Bug Tracker" = "https://github.com/knowlen/monitorsettings/issues"
+
 [project.optional-dependencies]
 blessed = [
     "blessed>=1.19.0",
@@ -61,6 +66,8 @@ target-version = ['py37']
 [tool.ruff]
 line-length = 100
 target-version = "py37"
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -72,7 +79,7 @@ select = [
 ]
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
