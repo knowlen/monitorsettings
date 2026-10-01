@@ -56,6 +56,25 @@ class TestDDCInterface:
 
         assert displays == [1, 2]
         assert ddc_interface.displays == [1, 2]
+        assert ddc_interface.buses == {1: 1, 2: 2}
+
+    def test_commands_address_detected_bus(self, ddc_interface, mocker):
+        """After detection, commands use --bus (no per-command detection)"""
+        mock_run = mocker.patch("subprocess.run")
+        mock_run.return_value = MagicMock(
+            stdout="Display 1\n   I2C bus:  /dev/i2c-2\n\nDisplay 2\n   I2C bus:  /dev/i2c-4\n"
+        )
+        ddc_interface.detect_displays()
+
+        mock_run.return_value = MagicMock(returncode=0)
+        ddc_interface.set_vcp_value(2, "0x10", 30)
+
+        mock_run.assert_called_with(
+            ["ddcutil", "setvcp", "0x10", "30", "--bus", "4", "--noverify", "--skip-ddc-checks"],
+            capture_output=True,
+            timeout=3,
+            check=True,
+        )
 
     def test_detect_displays_none_found(self, ddc_interface, mocker):
         """Test display detection when no displays found"""
@@ -106,7 +125,7 @@ class TestDDCInterface:
 
         assert result is True
         mock_run.assert_called_with(
-            ["ddcutil", "setvcp", "0x10", "75", "-d", "1"],
+            ["ddcutil", "setvcp", "0x10", "75", "-d", "1", "--noverify", "--skip-ddc-checks"],
             capture_output=True,
             timeout=3,
             check=True,
@@ -137,6 +156,7 @@ class TestDDCInterface:
         mock_sleep = mocker.patch("time.sleep")
         mock_time = mocker.patch("time.time")
         mock_time.side_effect = [0, 0, 0.2, 0.2, 0.3]  # Simulate time passing
+        ddc_interface._command_interval = 1.0
 
         ddc_interface._wait_for_command_interval()
         ddc_interface._wait_for_command_interval()
@@ -216,3 +236,43 @@ class TestAsyncDDCWorker:
             async_worker._pending_updates.clear()
 
         assert mock_set_async.call_count == 0
+
+    def test_worker_one_write_per_display_newest_wins(self, async_worker, mocker):
+        """While a write is in flight, later values wait; only the newest is sent next"""
+        busy = MagicMock()
+        busy.poll.return_value = None  # still running
+        done = MagicMock()
+        done.poll.return_value = 0
+        mock_set_async = mocker.patch.object(
+            async_worker.ddc, "set_vcp_value_async", side_effect=[busy, done]
+        )
+        async_worker.update_interval = 0.0
+        async_worker.start()
+        async_worker.queue_update(1, "0x10", 10)
+        time.sleep(0.05)
+        async_worker.queue_update(1, "0x10", 11)
+        async_worker.queue_update(1, "0x10", 12)
+        time.sleep(0.05)
+        assert mock_set_async.call_count == 1  # 11 and 12 wait for the first write
+
+        busy.poll.return_value = 0  # first write finishes
+        time.sleep(0.05)
+        async_worker.stop()
+
+        assert [c.args[2] for c in mock_set_async.call_args_list] == [10, 12]
+
+    def test_worker_displays_are_independent(self, async_worker, mocker):
+        """A busy display does not hold back another display"""
+        busy = MagicMock()
+        busy.poll.return_value = None
+        mock_set_async = mocker.patch.object(
+            async_worker.ddc, "set_vcp_value_async", return_value=busy
+        )
+        async_worker.update_interval = 0.0
+        async_worker.start()
+        async_worker.queue_update(1, "0x10", 10)
+        async_worker.queue_update(2, "0x10", 20)
+        time.sleep(0.05)
+        async_worker.stop()
+
+        assert sorted(c.args[0] for c in mock_set_async.call_args_list) == [1, 2]

@@ -8,6 +8,14 @@ import threading
 import time
 from typing import Dict, List, Optional, Tuple
 
+# ddcutil flags for the per-change path. Addressing a monitor by display
+# number (-d N) makes every ddcutil run re-detect all monitors first (~1 s on a
+# machine with many I2C buses); --bus N skips that. --noverify drops the
+# read-back after each write and --skip-ddc-checks the per-run capability
+# probe. Measured on 2 x LG 4K over HDMI: -d 1.0-1.2 s, --bus + flags 0.10 s.
+SET_FLAGS = ["--noverify", "--skip-ddc-checks"]
+GET_FLAGS = ["--skip-ddc-checks"]
+
 
 class DDCInterface:
     """
@@ -17,9 +25,12 @@ class DDCInterface:
 
     def __init__(self) -> None:
         self.displays: List[int] = []
+        self.buses: Dict[int, int] = {}  # display number -> I2C bus, from detect
         self._lock = threading.Lock()
         self._last_command_time = 0.0
-        self._command_interval = 1.0  # inimum time between DDC commands
+        # Minimum time between synchronous DDC commands. ddcutil already
+        # enforces the DDC/CI protocol delays itself, so no extra gap is needed.
+        self._command_interval = 0.0
 
     def check_ddcutil(self) -> bool:
         """Check if ddcutil is available on the system"""
@@ -43,10 +54,22 @@ class DDCInterface:
 
             displays = re.findall(r"Display (\d+)", result.stdout)
             self.displays = [int(d) for d in displays]
+            # Remember each display's I2C bus so later commands can skip detection.
+            self.buses = {}
+            for block in re.split(r"(?m)^(?=Display \d+)", result.stdout):
+                d = re.match(r"Display (\d+)", block)
+                b = re.search(r"I2C bus:\s*/dev/i2c-(\d+)", block)
+                if d and b:
+                    self.buses[int(d.group(1))] = int(b.group(1))
             return self.displays
 
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             return []
+
+    def _target(self, display: int) -> List[str]:
+        """ddcutil arguments selecting a display: its bus if known, else its number."""
+        bus = self.buses.get(display)
+        return ["--bus", str(bus)] if bus is not None else ["-d", str(display)]
 
     def get_vcp_value(self, display: int, vcp_code: str) -> Tuple[Optional[int], Optional[int]]:
         """
@@ -64,7 +87,7 @@ class DDCInterface:
                 self._wait_for_command_interval()
 
                 result = subprocess.run(
-                    ["ddcutil", "getvcp", vcp_code, "-d", str(display)],
+                    ["ddcutil", "getvcp", vcp_code, *self._target(display), *GET_FLAGS],
                     capture_output=True,
                     text=True,
                     timeout=2,
@@ -98,7 +121,7 @@ class DDCInterface:
                 self._wait_for_command_interval()
 
                 subprocess.run(
-                    ["ddcutil", "setvcp", vcp_code, str(value), "-d", str(display)],
+                    ["ddcutil", "setvcp", vcp_code, str(value), *self._target(display), *SET_FLAGS],
                     capture_output=True,
                     timeout=3,
                     check=True,
@@ -121,7 +144,7 @@ class DDCInterface:
             Popen process object
         """
         return subprocess.Popen(
-            ["ddcutil", "setvcp", vcp_code, str(value), "-d", str(display)],
+            ["ddcutil", "setvcp", vcp_code, str(value), *self._target(display), *SET_FLAGS],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -139,18 +162,24 @@ class DDCInterface:
 
 class AsyncDDCWorker:
     """
-    Background worker for sending DDC commands asynchronously with debouncing
+    Background worker that sends DDC commands asynchronously.
+
+    At most one ddcutil process is in flight per display (they share one I2C
+    bus), and when it finishes the newest pending value is sent next, so
+    intermediate values are skipped and writes can never land out of order.
     """
 
-    def __init__(self, ddc_interface: DDCInterface, update_interval: float = 0.5):
+    def __init__(self, ddc_interface: DDCInterface, update_interval: float = 0.0):
         self.ddc = ddc_interface
+        # Optional extra gap between writes to the same display (seconds).
         self.update_interval = update_interval
         self.running = False
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._pending_updates: Dict[Tuple[int, str], int] = {}
         self._last_sent: Dict[Tuple[int, str], int] = {}
-        self._last_update_time = 0.0
+        self._in_flight: Dict[int, subprocess.Popen] = {}
+        self._last_send_time: Dict[int, float] = {}
 
     def start(self) -> None:
         """Start the background worker thread"""
@@ -177,36 +206,36 @@ class AsyncDDCWorker:
         with self._lock:
             self._pending_updates[(display, vcp_code)] = value
 
+    def _busy(self, display: int) -> bool:
+        """True while a write to this display is still running."""
+        p = self._in_flight.get(display)
+        if p is None:
+            return False
+        if p.poll() is None:
+            return True
+        del self._in_flight[display]
+        return False
+
     def _worker_loop(self) -> None:
-        """Main worker loop for processing queued updates"""
+        """Send the newest pending value for each display as soon as it is free."""
         while self.running:
-            time.sleep(0.05)  # Check every 50ms
-
-            current_time = time.time()
-            if current_time - self._last_update_time < self.update_interval:
-                continue
-
-            updates_to_send = []
-
+            time.sleep(0.01)
+            now = time.time()
+            to_send = []
+            claimed = set()  # one write per display per pass
             with self._lock:
-                for key, value in self._pending_updates.items():
-                    if self._last_sent.get(key) != value:
-                        updates_to_send.append((key, value))
-                        self._last_sent[key] = value
-
-                self._pending_updates.clear()
-
-            if updates_to_send:
-                self._last_update_time = current_time
-                processes = []
-
-                for (display, vcp_code), value in updates_to_send:
-                    p = self.ddc.set_vcp_value_async(display, vcp_code, value)
-                    processes.append(p)
-
-                # Don't wait for completion - fire and forget
-                for p in processes:
-                    try:
-                        p.wait(timeout=0.01)
-                    except subprocess.TimeoutExpired:
-                        pass
+                for key, value in list(self._pending_updates.items()):
+                    display = key[0]
+                    if display in claimed or self._busy(display):
+                        continue  # keep it pending; the newest value wins
+                    if now - self._last_send_time.get(display, 0.0) < self.update_interval:
+                        continue
+                    del self._pending_updates[key]
+                    if self._last_sent.get(key) == value:
+                        continue
+                    self._last_sent[key] = value
+                    claimed.add(display)
+                    to_send.append((key, value))
+            for (display, vcp_code), value in to_send:
+                self._in_flight[display] = self.ddc.set_vcp_value_async(display, vcp_code, value)
+                self._last_send_time[display] = now
