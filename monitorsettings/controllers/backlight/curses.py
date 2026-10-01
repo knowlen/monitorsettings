@@ -100,7 +100,6 @@ class CursesBacklightController(BacklightController):
             self.stdscr.addstr(3 + i, 2, f"Display {display}: {current}/{max_val}")
             self.stdscr.refresh()
 
-        time.sleep(0.5)
         return True
 
     def draw_interface(self) -> None:

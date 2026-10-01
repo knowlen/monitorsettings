@@ -42,7 +42,6 @@ class BlessedBacklightController(BacklightController):
             print(f"  Display {display}: {current}/{max_val}")
 
         print("\nStarting interactive mode...\n")
-        time.sleep(1)
 
         # Start background worker
         self.start_worker()
